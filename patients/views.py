@@ -3,12 +3,10 @@ from rest_framework import viewsets, permissions
 from .models import Patient
 from .serializers import PatientSerializer
 from .permissions import IsOwner
+from config.utils import ResponseMixin
 
 
-@extend_schema(
-    parameters=None,
-)
-class PatientViewSet(viewsets.ModelViewSet):
+class PatientViewSet(ResponseMixin, viewsets.ModelViewSet):
     serializer_class = PatientSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwner]
 

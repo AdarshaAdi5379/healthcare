@@ -4,15 +4,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+from config.utils import format_errors, success_response, created_response
 from .serializers import RegisterSerializer, LoginSerializer
-
-
-def format_errors(errors):
-    if isinstance(errors, dict):
-        if 'non_field_errors' in errors:
-            return {'error': errors['non_field_errors'][0]}
-        return {'errors': {k: [str(e) for e in v] if isinstance(v, list) else str(v) for k, v in errors.items()}}
-    return {'error': str(errors)}
 
 
 @extend_schema(
@@ -26,14 +19,13 @@ def register_view(request):
     if serializer.is_valid():
         user = serializer.save()
         refresh = RefreshToken.for_user(user)
-        return Response({
-            'message': 'User registered successfully',
+        return created_response('User registered successfully', {
             'user': {'id': user.id, 'email': user.email, 'name': user.name},
             'tokens': {
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
             }
-        }, status=status.HTTP_201_CREATED)
+        })
     return Response(format_errors(serializer.errors), status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -48,8 +40,7 @@ def login_view(request):
     if serializer.is_valid():
         user = serializer.validated_data['user']
         refresh = RefreshToken.for_user(user)
-        return Response({
-            'message': 'Login successful',
+        return success_response('Login successful', {
             'user': {'id': user.id, 'email': user.email, 'name': user.name},
             'tokens': {
                 'access': str(refresh.access_token),
