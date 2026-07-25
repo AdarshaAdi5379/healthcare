@@ -7,6 +7,10 @@ def custom_exception_handler(exc, context):
         if isinstance(response.data, dict):
             if 'detail' in response.data:
                 response.data = {'error': response.data['detail']}
+            elif 'non_field_errors' in response.data:
+                response.data = {
+                    'error': response.data['non_field_errors'][0]
+                }
             else:
                 errors = {}
                 for field, messages in response.data.items():

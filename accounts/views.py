@@ -6,6 +6,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import RegisterSerializer, LoginSerializer
 
 
+def format_errors(errors):
+    if isinstance(errors, dict):
+        if 'non_field_errors' in errors:
+            return {'error': errors['non_field_errors'][0]}
+        return {'errors': {k: [str(e) for e in v] if isinstance(v, list) else str(v) for k, v in errors.items()}}
+    return {'error': str(errors)}
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_view(request):
@@ -21,7 +29,7 @@ def register_view(request):
                 'refresh': str(refresh),
             }
         }, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(format_errors(serializer.errors), status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
@@ -39,4 +47,4 @@ def login_view(request):
                 'refresh': str(refresh),
             }
         })
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(format_errors(serializer.errors), status=status.HTTP_400_BAD_REQUEST)
