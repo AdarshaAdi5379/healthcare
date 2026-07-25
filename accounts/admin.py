@@ -5,8 +5,9 @@ from .models import CustomUser
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ('email', 'name', 'is_staff', 'is_active')
+    list_display = ('email', 'name', 'is_staff', 'is_active', 'date_joined')
     ordering = ('email',)
+    date_hierarchy = 'date_joined'
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal info', {'fields': ('name',)}),
