@@ -1,9 +1,13 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets, permissions
 from .models import Patient
 from .serializers import PatientSerializer
 from .permissions import IsOwner
 
 
+@extend_schema(
+    parameters=None,
+)
 class PatientViewSet(viewsets.ModelViewSet):
     serializer_class = PatientSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwner]
