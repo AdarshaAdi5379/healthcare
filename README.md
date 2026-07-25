@@ -1,130 +1,168 @@
 # Healthcare Backend API
 
-A Django REST Framework backend for a healthcare application with JWT authentication, patient and doctor management, and patient-doctor mapping.
+A Django REST Framework backend for a healthcare application built as an internship assignment. The system provides JWT-based authentication, patient and doctor management, and patient-doctor assignment mapping.
+
+---
+
+## Features
+
+- **JWT Authentication** — Register and login with email/password, receives access and refresh tokens
+- **Patient Management** — Create, read, update, and delete patients (scoped to the owning user)
+- **Doctor Management** — Create, read, update, and delete doctors (visible to all authenticated users)
+- **Patient-Doctor Mapping** — Assign doctors to patients, list mappings, query doctors by patient
+- **Swagger Documentation** — Auto-generated OpenAPI schema with interactive Swagger UI
+- **Validation** — Field-level validation with meaningful error messages
+- **Error Handling** — Consistent JSON error responses across all endpoints
+- **Security** — Passwords hashed with PBKDF2, JWT auth required for protected endpoints, ownership enforced for patient data
 
 ---
 
 ## Tech Stack
 
-- Python 3.12 / Django 6.0
-- Django REST Framework
-- PostgreSQL
-- JWT Authentication (SimpleJWT)
-- OpenAPI / Swagger (drf-spectacular)
+| Layer | Technology |
+|-------|-----------|
+| Framework | Django 6.0 / Django REST Framework 3.17 |
+| Database | PostgreSQL |
+| Authentication | JWT (djangorestframework-simplejwt) |
+| API Docs | drf-spectacular (OpenAPI 3 / Swagger) |
+| Environment | python-decouple |
+| Testing | Django TestCase (41 tests) |
 
 ---
 
-## Setup
+## Project Structure
 
-### 1. Clone and enter the project
+```
+healthcare/
+├── manage.py
+├── requirements.txt
+├── .env / .env.example
+├── .gitignore
+├── README.md
+├── config/                    # Django project configuration
+│   ├── settings.py            # DRF, JWT, PostgreSQL, CORS, Swagger
+│   ├── urls.py                # Root URL routing
+│   ├── exceptions.py          # Custom error handler
+│   ├── utils.py               # Shared response helpers
+│   └── wsgi.py / asgi.py
+├── accounts/                  # User authentication app
+│   ├── models.py              # CustomUser (email-based, no username)
+│   ├── serializers.py         # RegisterSerializer, LoginSerializer
+│   ├── views.py               # register_view, login_view
+│   ├── urls.py                # POST /api/auth/register/, /api/auth/login/
+│   ├── admin.py               # CustomUser admin (UserAdmin)
+│   └── tests.py               # 7 tests
+├── patients/                  # Patient management app
+│   ├── models.py              # Patient (name, age, gender, contact, address)
+│   ├── serializers.py         # PatientSerializer with field validation
+│   ├── views.py               # PatientViewSet (owner-scoped)
+│   ├── urls.py                # /api/patients/ CRUD
+│   ├── permissions.py         # IsOwner permission
+│   ├── admin.py               # Patient admin
+│   └── tests.py               # 14 tests
+├── doctors/                   # Doctor management app
+│   ├── models.py              # Doctor (name, specialization, email, experience)
+│   ├── serializers.py         # DoctorSerializer with validation
+│   ├── views.py               # DoctorViewSet
+│   ├── urls.py                # /api/doctors/ CRUD
+│   ├── admin.py               # Doctor admin
+│   └── tests.py               # 10 tests
+└── mappings/                  # Patient-Doctor mapping app
+    ├── models.py              # Mapping (patient, doctor, assigned_by)
+    ├── serializers.py         # MappingSerializer
+    ├── views.py               # MappingViewSet + PatientDoctorsView
+    ├── urls.py                # /api/mappings/ CRUD + by-patient lookup
+    ├── admin.py               # Mapping admin
+    └── tests.py               # 10 tests
+```
+
+---
+
+## Installation
+
+### Prerequisites
+
+- Python 3.10+
+- PostgreSQL (running on port 5433 or configured otherwise)
+- pip
+
+### Setup Steps
 
 ```bash
+# 1. Clone the repository
 git clone <repo-url>
 cd healthcare
-```
 
-### 2. Create virtual environment and install dependencies
-
-```bash
+# 2. Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Configure environment
-
-Copy `.env.example` to `.env` and adjust values:
-
-```bash
+# 4. Configure environment
 cp .env.example .env
-```
+# Edit .env with your database credentials
 
-Default `.env`:
-
-```
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-DB_NAME=healthcare_db
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_HOST=localhost
-DB_PORT=5433
-```
-
-### 4. Create the database
-
-```bash
+# 5. Create the database
 createdb -h localhost -p 5433 -U postgres healthcare_db
-```
 
-### 5. Run migrations
-
-```bash
+# 6. Run migrations
 python manage.py migrate
-```
 
-### 6. Create a superuser (optional, for admin access)
-
-```bash
+# 7. (Optional) Create superuser for admin access
 python manage.py createsuperuser
-```
 
-### 7. Start the server
+# 8. Run tests
+python manage.py test
 
-```bash
+# 9. Start the server
 python manage.py runserver
 ```
 
 The API will be available at `http://localhost:8000/api/`.
 
-Swagger documentation: `http://localhost:8000/api/docs/`
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SECRET_KEY` | (required) | Django secret key |
+| `DEBUG` | `True` | Debug mode |
+| `ALLOWED_HOSTS` | `*` | Comma-separated allowed hosts |
+| `DB_NAME` | `healthcare_db` | PostgreSQL database name |
+| `DB_USER` | `postgres` | Database user |
+| `DB_PASSWORD` | `postgres` | Database password |
+| `DB_HOST` | `localhost` | Database host |
+| `DB_PORT` | `5433` | Database port |
+| `CORS_ALLOW_ALL_ORIGINS` | `True` | Allow all CORS origins |
+| `CORS_ALLOWED_ORIGINS` | `` | Comma-separated allowed origins |
+
+---
+
+## Authentication Flow
+
+1. **Register** at `POST /api/auth/register/` with `email`, `name`, and `password`
+2. **Login** at `POST /api/auth/login/` with `email` and `password`
+3. Both endpoints return `{ message, data: { user, tokens: { access, refresh } } }`
+4. Include the access token in subsequent requests: `Authorization: Bearer <access_token>`
+5. Access tokens expire after 1 day; refresh tokens expire after 7 days
 
 ---
 
 ## API Endpoints
 
-### Authentication
+### Authentication (public)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/auth/register/` | Register a new user |
 | POST | `/api/auth/login/` | Login and receive JWT tokens |
 
-**Register**
-```json
-POST /api/auth/register/
-{
-    "email": "user@example.com",
-    "name": "John Doe",
-    "password": "securepass123"
-}
-```
+### Patients (authenticated, owner-scoped)
 
-**Login**
-```json
-POST /api/auth/login/
-{
-    "email": "user@example.com",
-    "password": "securepass123"
-}
-```
-
-Both endpoints return:
-```json
-{
-    "message": "...",
-    "user": {"id": 1, "email": "...", "name": "..."},
-    "tokens": {"access": "...", "refresh": "..."}
-}
-```
-
-All subsequent requests require `Authorization: Bearer <access_token>` header.
-
----
-
-### Patients (Authenticated)
-
-Patients are scoped to the authenticated user. Users can only see/edit their own patients.
+Only the user who created a patient can view, update, or delete it.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -134,19 +172,7 @@ Patients are scoped to the authenticated user. Users can only see/edit their own
 | PUT | `/api/patients/<id>/` | Update patient |
 | DELETE | `/api/patients/<id>/` | Delete patient |
 
-**Patient fields:**
-
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| name | string | Yes | |
-| age | integer | Yes | 0-150 |
-| gender | string | Yes | M, F, or O |
-| contact_number | string | Yes | At least 10 digits |
-| address | string | No | |
-
----
-
-### Doctors (Authenticated)
+### Doctors (authenticated)
 
 All authenticated users can view and manage all doctors.
 
@@ -158,21 +184,7 @@ All authenticated users can view and manage all doctors.
 | PUT | `/api/doctors/<id>/` | Update doctor |
 | DELETE | `/api/doctors/<id>/` | Delete doctor |
 
-**Doctor fields:**
-
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| name | string | Yes | |
-| specialization | string | Yes | |
-| email | string | Yes | Must be unique |
-| contact_number | string | Yes | |
-| experience | integer | No | Cannot be negative |
-| available_from | time (HH:MM) | No | |
-| available_to | time (HH:MM) | No | |
-
----
-
-### Mappings (Authenticated)
+### Mappings (authenticated)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -181,63 +193,132 @@ All authenticated users can view and manage all doctors.
 | GET | `/api/mappings/by-patient/<patient_id>/` | Get doctors for a patient |
 | DELETE | `/api/mappings/<id>/` | Delete a mapping |
 
-Duplicate patient-doctor pairs are prevented.
+---
+
+## Response Format
+
+### Success
+
+```json
+// Create / Update
+{
+    "message": "Patient created successfully",
+    "data": { ... }
+}
+
+// List / Retrieve (returns data directly)
+[ ... ]
+
+// Delete (returns 204 No Content with no body)
+```
+
+### Error
+
+```json
+// Authentication error
+{"error": "Authentication credentials were not provided."}
+
+// Validation error (field-level)
+{"errors": {"age": ["Age must be between 0 and 150"]}}
+
+// General error
+{"error": "Invalid email or password"}
+
+// Not found
+{"error": "Not found."}
+```
 
 ---
 
-## Error Responses
+## Validation Rules
 
-All errors return consistent JSON:
+### Patient
 
-```json
-// Validation errors (field-specific)
-{"errors": {"age": ["Age must be between 0 and 150"]}}
+| Field | Rule |
+|-------|------|
+| name | Required, cannot be empty |
+| age | Required, must be 0-150 |
+| gender | Required, must be M, F, or O |
+| contact_number | Required, at least 10 digits |
+| address | Optional |
 
-// General errors
-{"error": "Invalid email or password"}
+### Doctor
 
-// Authentication errors
-{"error": "Authentication credentials were not provided."}
+| Field | Rule |
+|-------|------|
+| name | Required, cannot be empty |
+| specialization | Required |
+| email | Required, must be unique |
+| experience | Must be 0 or greater |
+| available_from / available_to | available_from must be earlier than available_to |
+
+### Mapping
+
+| Rule | Description |
+|------|-------------|
+| patient | Must exist |
+| doctor | Must exist |
+| Duplicate | Same patient-doctor pair cannot exist |
+
+---
+
+## Testing
+
+```bash
+python manage.py test
+
+# Run tests for a specific app
+python manage.py test accounts
+python manage.py test patients
+python manage.py test doctors
+python manage.py test mappings
 ```
+
+The test suite covers:
+
+- **Authentication**: Registration, login, invalid credentials, duplicate emails, password hashing, unauthenticated access
+- **Patients**: CRUD, ownership scoping, cross-user isolation, validation (age, phone, gender, empty name)
+- **Doctors**: CRUD, auth requirements, validation (email uniqueness, negative experience, empty name, time range)
+- **Mappings**: Create, duplicate prevention, list, doctors-by-patient lookup, delete, invalid references
+
+---
+
+## API Documentation
+
+Swagger UI: `http://localhost:8000/api/docs/`
+OpenAPI Schema: `http://localhost:8000/api/schema/`
 
 ---
 
 ## Admin Interface
 
-Accessible at `/admin/` after creating a superuser. All models (Users, Patients, Doctors, Mappings) are registered.
+Accessible at `http://localhost:8000/admin/` after creating a superuser.
+
+All four models are registered with search, filtering, date hierarchy, and custom display fields.
 
 ---
 
-## Project Structure
+## Assumptions
 
-```
-healthcare/
-├── manage.py
-├── requirements.txt
-├── .env / .env.example
-├── config/              # Django project settings
-│   ├── settings.py
-│   ├── urls.py
-│   └── exceptions.py
-├── accounts/            # User auth (register, login, JWT)
-│   ├── models.py        # CustomUser (email-based)
-│   ├── serializers.py
-│   ├── views.py
-│   └── urls.py
-├── patients/            # Patient CRUD
-│   ├── models.py
-│   ├── serializers.py
-│   ├── permissions.py   # IsOwner
-│   ├── views.py
-│   └── urls.py
-├── doctors/             # Doctor CRUD
-│   ├── models.py
-│   ├── serializers.py
-│   ├── views.py
-│   └── urls.py
-└── mappings/            # Patient-Doctor mappings
-    ├── models.py
-    ├── serializers.py
-    ├── views.py
-    └── urls.py
-```
+- The assignment assumes a single backend with no frontend
+- PostgreSQL is the required database (SQLite not used)
+- Patients are scoped to the creating user; doctors are visible to all authenticated users
+- The `GET /api/mappings/by-patient/<patient_id>/` URL is used instead of `GET /api/mappings/<patient_id>/` due to URL routing conflicts with mapping IDs
+- CORS is wide open by default for development convenience
+- Access tokens expire in 1 day, refresh tokens in 7 days
+
+---
+
+## Future Improvements
+
+- Add pagination for patient and doctor list endpoints
+- Implement email verification during registration
+- Add password reset flow
+- Add role-based access control (admin, doctor, patient roles)
+- Add rate limiting on auth endpoints
+- Add request throttling
+- Add CI/CD pipeline with GitHub Actions
+- Containerize with Docker and docker-compose
+- Add filtering and search query parameters to list endpoints
+- Implement refresh token rotation for enhanced security
+- Add audit logging for sensitive operations
