@@ -1,7 +1,5 @@
 from rest_framework import serializers
 from .models import Mapping
-from patients.models import Patient
-from doctors.serializers import DoctorSerializer
 
 
 class MappingSerializer(serializers.ModelSerializer):
@@ -23,9 +21,3 @@ class MappingSerializer(serializers.ModelSerializer):
                 'This patient is already assigned to this doctor'
             )
         return data
-
-
-class PatientDoctorsSerializer(serializers.Serializer):
-    patient_id = serializers.IntegerField()
-    patient_name = serializers.CharField()
-    doctors = DoctorSerializer(many=True)
