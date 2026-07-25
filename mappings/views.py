@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from .models import Mapping
 from .serializers import MappingSerializer
 from patients.models import Patient
@@ -18,6 +19,9 @@ class MappingViewSet(viewsets.ModelViewSet):
         serializer.save(assigned_by=self.request.user)
 
 
+@extend_schema(
+    responses={200: OpenApiResponse(description='Doctors assigned to patient')},
+)
 class PatientDoctorsView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
