@@ -51,7 +51,7 @@ healthcare/
 │   ├── views.py               # register_view, login_view
 │   ├── urls.py                # POST /api/auth/register/, /api/auth/login/
 │   ├── admin.py               # CustomUser admin (UserAdmin)
-│   └── tests.py               # 7 tests
+│   └── tests.py               # 8 tests
 ├── patients/                  # Patient management app
 │   ├── models.py              # Patient (name, age, gender, contact, address)
 │   ├── serializers.py         # PatientSerializer with field validation
@@ -66,7 +66,7 @@ healthcare/
 │   ├── views.py               # DoctorViewSet
 │   ├── urls.py                # /api/doctors/ CRUD
 │   ├── admin.py               # Doctor admin
-│   └── tests.py               # 10 tests
+│   └── tests.py               # 9 tests
 └── mappings/                  # Patient-Doctor mapping app
     ├── models.py              # Mapping (patient, doctor, assigned_by)
     ├── serializers.py         # MappingSerializer

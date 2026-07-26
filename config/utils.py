@@ -26,8 +26,8 @@ def created_response(message, data=None):
     return success_response(message, data, status.HTTP_201_CREATED)
 
 
-def deleted_response(message='Resource deleted successfully'):
-    return Response({'message': message}, status=status.HTTP_204_NO_CONTENT)
+def deleted_response():
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 def error_response(message, http_status=status.HTTP_400_BAD_REQUEST):
@@ -39,9 +39,8 @@ class ResponseMixin:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        model_name = getattr(self, 'queryset', None) or getattr(self, 'serializer_class').Meta.model._meta.verbose_name
         return created_response(
-            f'{getattr(self.serializer_class.Meta.model, "_meta", None) and self.serializer_class.Meta.model._meta.verbose_name.title() or "Resource"} created successfully',
+            f'{self.serializer_class.Meta.model._meta.verbose_name.title()} created successfully',
             serializer.data
         )
 
@@ -59,6 +58,4 @@ class ResponseMixin:
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
-        return deleted_response(
-            f'{self.serializer_class.Meta.model._meta.verbose_name.title()} deleted successfully'
-        )
+        return deleted_response()

@@ -1,8 +1,7 @@
 from rest_framework import viewsets, permissions
-from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
-from config.utils import ResponseMixin, created_response, success_response, deleted_response
+from config.utils import ResponseMixin, success_response
 from .models import Mapping
 from .serializers import MappingSerializer
 from patients.models import Patient
